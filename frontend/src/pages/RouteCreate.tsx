@@ -57,6 +57,8 @@ const RouteCreate: React.FC = () => {
         search: q,
         region: params?.region,
         limit: params?.limit ? Number(params.limit) : undefined,
+        geo_scope: params?.geo_scope as 'domestic' | 'international' | undefined,
+        country: params?.country,
       });
       setAvailablePois(response.data.results as RoutePlace[]);
     } catch (error) {
@@ -74,7 +76,13 @@ const RouteCreate: React.FC = () => {
   };
 
   const handleSearch = useCallback(
-    (params: { search?: string; type?: string; tags?: string }) => {
+    (params: {
+      search?: string;
+      type?: string;
+      tags?: string;
+      geo_scope?: 'domestic' | 'international';
+      country?: string;
+    }) => {
       fetchPois(params as Record<string, string>);
     },
     [fetchPois]

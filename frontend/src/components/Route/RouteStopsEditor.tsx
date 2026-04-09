@@ -61,6 +61,8 @@ const RouteStopsEditor: React.FC<RouteStopsEditorProps> = ({
         search: q,
         region: params?.region,
         limit: params?.limit ? Number(params.limit) : undefined,
+        geo_scope: params?.geo_scope as 'domestic' | 'international' | undefined,
+        country: params?.country,
       });
       setAvailablePlaces(response.data.results as RoutePlace[]);
     } catch {
