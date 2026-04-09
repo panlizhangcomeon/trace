@@ -80,3 +80,79 @@ def test_international_uses_nominatim_and_caches():
     call_kw = nom.search.call_args.kwargs
     assert 'Paris' in call_kw['query']
     assert call_kw['country_codes'] == 'fr'
+
+
+@pytest.mark.django_db
+def test_domestic_empty_not_cached_so_second_call_hits_baidu_again():
+    with patch('services.baidu_poi_service.BaiduPOIService') as m_cls:
+        inst = MagicMock()
+        m_cls.return_value = inst
+        inst.search.return_value = []
+        inst.format_poi_result.side_effect = lambda r: r
+
+        search_external_places('nope', geo_scope='domestic', region='全国', limit=5)
+        search_external_places('nope', geo_scope='domestic', region='全国', limit=5)
+
+    assert inst.search.call_count == 2
+
+
+@pytest.mark.django_db
+def test_international_invalid_country_codes_sanitized_to_none():
+    with patch('services.nominatim_service.get_nominatim_service') as gns:
+        nom = MagicMock()
+        gns.return_value = nom
+        nom.search.return_value = []
+        nom.format_as_geoplace.side_effect = lambda r: r
+
+        search_external_places(
+            'Tokyo Disneyland',
+            geo_scope='international',
+            region='全国',
+            limit=5,
+            country_codes='日本',
+        )
+
+    kw = nom.search.call_args.kwargs
+    assert kw.get('country_codes') is None
+
+
+@pytest.mark.django_db
+def test_international_retries_without_country_when_filtered_empty():
+    raw_hit = [
+        {
+            'place_id': 1,
+            'lat': '35.63',
+            'lon': '139.88',
+            'display_name': 'Tokyo Disneyland',
+            'name': 'Tokyo Disneyland',
+            'type': 'theme_park',
+            'class': 'tourism',
+            'address': {},
+            'osm_type': 'way',
+            'osm_id': 1,
+        }
+    ]
+    with patch('services.nominatim_service.get_nominatim_service') as gns:
+        nom = MagicMock()
+        gns.return_value = nom
+        nom.search.side_effect = [[], raw_hit]
+        nom.format_as_geoplace.side_effect = lambda r: {
+            'name': r['name'],
+            'latitude': float(r['lat']),
+            'longitude': float(r['lon']),
+        }
+
+        results, provider, cached = search_external_places(
+            'Tokyo Disneyland',
+            geo_scope='international',
+            region='全国',
+            limit=5,
+            country_codes='xx',
+        )
+
+    assert provider == 'nominatim'
+    assert cached is False
+    assert len(results) == 1
+    assert nom.search.call_count == 2
+    assert nom.search.call_args_list[0].kwargs.get('country_codes') == 'xx'
+    assert nom.search.call_args_list[1].kwargs.get('country_codes') is None

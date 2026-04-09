@@ -129,7 +129,7 @@ const POISearchBar: React.FC<POISearchBarProps> = ({ onSearch, suggestionPlaces 
         />
         {geoScope === 'international' ? (
           <Input
-            placeholder="国家代码 fr / jp …"
+            placeholder="国家代码（可选，须两位字母如 jp；乱填会搜不到）"
             value={countryCode}
             onChange={(e) => setCountryCode(e.target.value)}
             className="max-w-[10rem]"
