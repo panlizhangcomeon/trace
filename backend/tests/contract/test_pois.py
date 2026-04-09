@@ -54,6 +54,8 @@ class TestPOIContract:
         assert response.status_code == 200
         assert 'count' in response.data
         assert 'results' in response.data
+        assert response.data.get('provider') in ('baidu', 'nominatim', None)
+        assert 'cached' in response.data
 
     def test_update_poi_contract(self):
         """PUT /api/v1/pois/{id}/ - Update POI."""

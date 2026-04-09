@@ -123,9 +123,20 @@ export const poiApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<{ count: number; results: POI[] }>('/pois/', { params }),
 
-  // Search real-world places via Baidu Maps POI API
-  search: (params: { search: string; region?: string; limit?: number }) =>
-    apiClient.get<{ count: number; results: GeoPlace[] }>('/pois/search/', { params }),
+  // Search real-world places: domestic=Baidu, international=Nominatim
+  search: (params: {
+    search: string;
+    region?: string;
+    limit?: number;
+    geo_scope?: 'domestic' | 'international';
+    country?: string;
+  }) =>
+    apiClient.get<{
+      count: number;
+      results: GeoPlace[];
+      provider: 'baidu' | 'nominatim' | null;
+      cached: boolean;
+    }>('/pois/search/', { params }),
 
   // Search local database POIs (for admin/filtering)
   searchLocal: (params?: Record<string, string>) =>

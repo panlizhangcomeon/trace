@@ -40,8 +40,15 @@ const POIList: React.FC = () => {
     }
   };
 
-  // 搜索百度地图
-  const handleSearch = useCallback(async (params: { search?: string; type?: string; tags?: string }) => {
+  // 外部 POI 搜索（国内百度 / 境外 Nominatim）
+  const handleSearch = useCallback(
+    async (params: {
+      search?: string;
+      type?: string;
+      tags?: string;
+      geo_scope?: 'domestic' | 'international';
+      country?: string;
+    }) => {
     const keyword = params.search?.trim();
     if (!keyword) {
       setSearchResults([]);
@@ -52,8 +59,11 @@ const POIList: React.FC = () => {
     setLoading(true);
     setSearchQuery(keyword);
     try {
-      // 调用百度POI搜索
-      const response = await poiApi.search({ search: keyword });
+      const response = await poiApi.search({
+        search: keyword,
+        geo_scope: params.geo_scope,
+        country: params.country,
+      });
       const results = response.data.results || [];
       setSearchResults(results);
 
@@ -82,7 +92,9 @@ const POIList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [autoCreate]);
+  },
+  [autoCreate],
+);
 
   // 自动创建POI到本地数据库
   const autoCreatePoi = async (place: GeoPlace) => {

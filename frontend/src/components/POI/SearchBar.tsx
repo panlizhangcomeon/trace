@@ -6,6 +6,9 @@ interface POISearchBarProps {
     search?: string;
     type?: string;
     tags?: string;
+    geo_scope?: 'domestic' | 'international';
+    /** ISO 3166-1 alpha-2，境外搜索时传给 Nominatim countrycodes，如 fr、jp */
+    country?: string;
   }) => void;
   /** 用于联想下拉的候选项（通常为当前接口返回的地点列表） */
   suggestionPlaces?: Array<{
@@ -34,12 +37,19 @@ const POI_TAGS = [
   { value: 'scenic_view', label: '风景' },
 ];
 
+const GEO_SCOPE_OPTIONS = [
+  { value: 'domestic' as const, label: '国内（百度）' },
+  { value: 'international' as const, label: '境外（OpenStreetMap）' },
+];
+
 const DEBOUNCE_MS = 320;
 
 const POISearchBar: React.FC<POISearchBarProps> = ({ onSearch, suggestionPlaces = [] }) => {
   const [searchText, setSearchText] = useState('');
   const [poiType, setPoiType] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [geoScope, setGeoScope] = useState<'domestic' | 'international'>('domestic');
+  const [countryCode, setCountryCode] = useState('');
   const onSearchRef = useRef(onSearch);
   onSearchRef.current = onSearch;
 
@@ -62,6 +72,8 @@ const POISearchBar: React.FC<POISearchBarProps> = ({ onSearch, suggestionPlaces 
     search: searchText.trim() || undefined,
     type: poiType || undefined,
     tags: tags.length > 0 ? tags.join(',') : undefined,
+    geo_scope: geoScope,
+    country: geoScope === 'international' ? countryCode.trim().toLowerCase() || undefined : undefined,
   });
 
   useEffect(() => {
@@ -70,10 +82,12 @@ const POISearchBar: React.FC<POISearchBarProps> = ({ onSearch, suggestionPlaces 
         search: searchText.trim() || undefined,
         type: poiType || undefined,
         tags: tags.length > 0 ? tags.join(',') : undefined,
+        geo_scope: geoScope,
+        country: geoScope === 'international' ? countryCode.trim().toLowerCase() || undefined : undefined,
       });
     }, DEBOUNCE_MS);
     return () => window.clearTimeout(t);
-  }, [searchText, poiType, tags]);
+  }, [searchText, poiType, tags, geoScope, countryCode]);
 
   return (
     <Space direction="vertical" className="w-full">
@@ -91,6 +105,8 @@ const POISearchBar: React.FC<POISearchBarProps> = ({ onSearch, suggestionPlaces 
               search: keyword || undefined,
               type: poiType || undefined,
               tags: tags.length > 0 ? tags.join(',') : undefined,
+              geo_scope: geoScope,
+              country: geoScope === 'international' ? countryCode.trim().toLowerCase() || undefined : undefined,
             });
           }, 0);
         }}
@@ -103,6 +119,24 @@ const POISearchBar: React.FC<POISearchBarProps> = ({ onSearch, suggestionPlaces 
         />
       </AutoComplete>
       <Space className="poi-search-filters w-full" wrap size="middle">
+        <Select
+          value={geoScope}
+          onChange={setGeoScope}
+          options={GEO_SCOPE_OPTIONS}
+          className="poi-search-filter-select w-[11rem] min-w-[11rem] max-w-full cursor-pointer"
+          variant="borderless"
+          popupMatchSelectWidth={false}
+        />
+        {geoScope === 'international' ? (
+          <Input
+            placeholder="国家代码 fr / jp …"
+            value={countryCode}
+            onChange={(e) => setCountryCode(e.target.value)}
+            className="max-w-[10rem]"
+            maxLength={8}
+            allowClear
+          />
+        ) : null}
         <Select
           placeholder="类型"
           value={poiType}

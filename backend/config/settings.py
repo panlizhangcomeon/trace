@@ -120,6 +120,34 @@ BAIDU_MAP_AK = os.environ.get('BAIDU_MAP_AK', 'bM7KqM7xHjiLKRBFIjR1f1uybfRGdocx'
 # 智能行程「确认创建」时按站点串行调用 place 检索；每次请求结束后休眠，降低 QPS/并发触发限流（秒，0 表示不延迟）
 BAIDU_SMART_COMMIT_INTERVAL_SEC = float(os.environ.get('BAIDU_SMART_COMMIT_INTERVAL_SEC', '0.35'))
 
+# External POI search cache (Baidu + Nominatim), seconds
+POI_GEOSEARCH_CACHE_TTL = int(os.environ.get('POI_GEOSEARCH_CACHE_TTL', '86400'))
+
+# Nominatim (international POI search) — public instance usage policy: ~1 req/s; set identifiable User-Agent
+NOMINATIM_BASE_URL = os.environ.get('NOMINATIM_BASE_URL', 'https://nominatim.openstreetmap.org').rstrip('/')
+NOMINATIM_USER_AGENT = os.environ.get('NOMINATIM_USER_AGENT', '').strip()
+# 可选；OSMF 政策允许用 Referer 或 User-Agent 标识应用（网站类请求可填前端或官网 URL）
+NOMINATIM_REFERER = os.environ.get('NOMINATIM_REFERER', '').strip()
+NOMINATIM_MIN_INTERVAL_SEC = float(os.environ.get('NOMINATIM_MIN_INTERVAL_SEC', '1.1'))
+# 仅作用于 Nominatim 出站；境内直连 OSM 超时/被墙时填本机代理（如云梯常见 http://127.0.0.1:7897）
+# 未设置时依次尝试标准环境变量，便于与 shell 中 export https_proxy= 一致
+_nom_proxy = os.environ.get('NOMINATIM_PROXY', '').strip()
+if not _nom_proxy:
+    for _k in ('HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy'):
+        _nom_proxy = os.environ.get(_k, '').strip()
+        if _nom_proxy:
+            break
+NOMINATIM_REQUEST_PROXIES = (
+    {'http': _nom_proxy, 'https': _nom_proxy} if _nom_proxy else None
+)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'trace-poi-geosearch',
+    }
+}
+
 # LLM (OpenAI-compatible chat completions) — never log LLM_API_KEY
 LLM_API_BASE = os.environ.get('LLM_API_BASE', '').strip()
 LLM_API_KEY = os.environ.get('LLM_API_KEY', '').strip()
