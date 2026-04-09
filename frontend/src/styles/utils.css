@@ -1,0 +1,53 @@
+/* Utility CSS — 随迹 Trace / Tactile Archive */
+
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.marker-hit-area {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 44px;
+  height: 44px;
+}
+
+.poi-click-area {
+  padding: 8px;
+  margin: -8px;
+}
+
+.route-line {
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.calendar-sidebar {
+  box-shadow: 2px 0 12px rgba(62, 48, 38, 0.06);
+}
+
+.traffic-option {
+  transition: background-color 200ms ease-out;
+}
+
+.traffic-option:hover {
+  background-color: rgba(139, 69, 19, 0.08);
+}
+
+.couple-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #8b4513;
+}
+
+.poster-canvas {
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(62, 48, 38, 0.1);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}

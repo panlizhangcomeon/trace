@@ -1,0 +1,58 @@
+@import 'maplibre-gl/dist/maplibre-gl.css';
+@import './styles/utils.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --trace-primary: #8b4513;
+  --trace-primary-deep: #6b3a22;
+  --trace-on-surface: #3d3d3d;
+  --trace-surface: #fdfbf8;
+}
+
+.maplibregl-map {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'Noto Sans SC',
+    Manrope,
+    -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+  background-color: var(--trace-surface);
+  color: var(--trace-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+@layer utilities {
+  .editorial-shadow {
+    box-shadow: 0 12px 32px rgba(62, 48, 38, 0.08);
+  }
+
+  /* CTA：仅褐色阶渐变，不用浅陶土避免显示器上偏粉 */
+  .traced-sunset-gradient {
+    background: linear-gradient(90deg, #5a2d0c 0%, #6b3a22 45%, #8b4513 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,132 @@
+# =============================================================================
+# 敏感信息与环境变量（勿提交真实密钥；保留 *.example 供模板）
+# =============================================================================
+.env
+.env.*
+# 注意：`.env.*` 会匹配 `.env.example`，必须在任意子目录下显式放行模板文件
+!**/.env.example
+!**/.env.*.example
+
+# 密钥与凭证（通用）
+*.pem
+*.p12
+*.pfx
+*.key
+!*.key.example
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*credentials*.json
+*service-account*.json
+.secrets/
+secrets/
+
+# =============================================================================
+# Python / Django（backend）
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+venv/
+ENV/
+env/
+.venv/
+
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.nox/
+.mypy_cache/
+.ruff_cache/
+
+*.pid
+*.err
+
+# =============================================================================
+# Node / 前端（frontend）
+# =============================================================================
+node_modules/
+.pnp/
+.pnp.js
+
+dist/
+build/
+
+coverage/
+*.tsbuildinfo
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =============================================================================
+# E2E / Playwright
+# =============================================================================
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# =============================================================================
+# 工具与 IDE（个人本地配置；若需共享编辑器配置可改为不忽略 .vscode）
+# =============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# =============================================================================
+# 操作系统
+# =============================================================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =============================================================================
+# 其他（体积大或本地生成）
+# =============================================================================
+*.tgz
+*.tar.gz
+
+# Specify（本地规格/扩展配置，不纳入版本库）
+.specify/
+
+# Claude Code 本地命令与配置
+.claude/
+
+# 文档与规格（按仓库策略不纳入版本库）
+docs/
+specs/
+
+# 设计稿与需求导出（本地资产）
+design-system/
+stitch_trace_product_requirements_document/
