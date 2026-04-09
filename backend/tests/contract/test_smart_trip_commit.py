@@ -9,6 +9,7 @@ from django.urls import reverse
 VALID_BODY = {
     'draft': {
         'schema_version': '1',
+        'trip_geo_scope': 'domestic',
         'trip_summary': {'title_hint': '契约测', 'destination_summary': '测'},
         'origin': {'label': 'o'},
         'days': [

@@ -140,6 +140,10 @@ if not _nom_proxy:
 NOMINATIM_REQUEST_PROXIES = (
     {'http': _nom_proxy, 'https': _nom_proxy} if _nom_proxy else None
 )
+# 智能行程确认落库：每站 Nominatim 请求后的额外休眠（秒），与 NOMINATIM_MIN_INTERVAL_SEC 配合
+NOMINATIM_SMART_COMMIT_INTERVAL_SEC = float(
+    os.environ.get('NOMINATIM_SMART_COMMIT_INTERVAL_SEC', '1.15')
+)
 
 CACHES = {
     'default': {

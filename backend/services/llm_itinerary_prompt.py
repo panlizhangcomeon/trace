@@ -23,6 +23,10 @@ JSON 必须符合以下规则：
 6. day_index 必须严格从 1 开始连续递增，与用户描述的天数一致；不要臆造用户未提到的城市或日期。
 7. search_query 用于地点检索，可略补充地标信息；城市语境放在 city_context，避免在 query 里重复冗长城市全名。
 8. segments 若输出则仅作审计/展示，字段 city_label、country_hint（可选）、days（整数 1–30）；落库以 days 为准。
+9. 顶层必须含 trip_geo_scope：字符串 "domestic" 或 "international"。domestic 表示行程主要在中国境内；international 表示境外（含港澳台若按境外检索策略处理时也可用 international）。
+10. domestic：search_query 可用中文；city_context 作百度检索 region。
+11. international：每个 stop 的 search_query 必须为英文（或拉丁字母转写），便于 OpenStreetMap/Nominatim；display_name 可保留中文给用户看。若某日明确在同一国家，该 day 应设 country_code（小写 ISO 3166-1 两位，如 jp、fr、th）。
+12. 示例（境外）：display_name「东京塔」、search_query「Tokyo Tower」、该日 country_code「jp」。
 
 只输出 JSON。"""
 

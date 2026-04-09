@@ -141,6 +141,47 @@ class TestSmartTripBuilder:
         assert trip.routes.count() == 1
         assert trip.routes.first().route_pois.count() == 0
 
+    def test_international_commit_uses_nominatim_mock(self):
+        draft = ItineraryDraftV1.model_validate(
+            {
+                'schema_version': '1',
+                'trip_geo_scope': 'international',
+                'trip_summary': {'title_hint': 'JP', 'destination_summary': 'Tokyo'},
+                'origin': {'label': 'NRT'},
+                'days': [
+                    {
+                        'day_index': 1,
+                        'city_context': 'Tokyo',
+                        'country_code': 'jp',
+                        'stops': [{'display_name': '塔', 'search_query': 'Tokyo Tower'}],
+                    }
+                ],
+            }
+        )
+        nom = MagicMock()
+        nom.search.return_value = [
+            {
+                'place_id': 1,
+                'lat': '35.6586',
+                'lon': '139.7454',
+                'display_name': 'Tokyo Tower',
+                'name': 'Tokyo Tower',
+                'type': 'tower',
+                'class': 'tourism',
+                'address': {},
+                'osm_type': 'node',
+                'osm_id': 1,
+            }
+        ]
+        nom.format_as_geoplace.side_effect = lambda r: {
+            'name': r['name'],
+            'latitude': float(r['lat']),
+            'longitude': float(r['lon']),
+        }
+        trip, _w = commit_draft(draft, {}, baidu=MagicMock(), nominatim=nom)
+        assert trip.routes.first().route_pois.count() == 1
+        nom.search.assert_called()
+
 
 @pytest.mark.django_db
 def test_find_reusable_poi_rounding():

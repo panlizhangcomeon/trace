@@ -13,6 +13,7 @@ from services.itinerary_schema import ItineraryDraftV1
 def _valid_draft_json() -> str:
     d = {
         'schema_version': '1',
+        'trip_geo_scope': 'domestic',
         'trip_summary': {'title_hint': '标题', 'destination_summary': '概要'},
         'origin': {'label': '出发'},
         'days': [

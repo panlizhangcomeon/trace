@@ -61,6 +61,7 @@ export interface Trip {
 /** 智能行程 LLM 草案（与后端 ItineraryDraftV1 对齐） */
 export interface ItineraryDraftV1 {
   schema_version: '1';
+  trip_geo_scope?: 'domestic' | 'international';
   trip_summary: {
     title_hint: string;
     destination_summary: string;
@@ -74,6 +75,7 @@ export interface ItineraryDraftV1 {
   days: Array<{
     day_index: number;
     city_context: string;
+    country_code?: string;
     stops: Array<{
       display_name: string;
       search_query?: string;

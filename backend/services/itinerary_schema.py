@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class TripSummary(BaseModel):
@@ -34,7 +34,22 @@ class Stop(BaseModel):
 class Day(BaseModel):
     day_index: int = Field(..., ge=1)
     city_context: str = Field(..., max_length=120)
+    country_code: Optional[str] = Field(
+        None,
+        max_length=2,
+        description='ISO 3166-1 alpha-2, lowercase, e.g. jp',
+    )
     stops: List[Stop] = Field(default_factory=list, max_length=20)
+
+    @field_validator('country_code', mode='before')
+    @classmethod
+    def normalize_country_code(cls, v):
+        if v is None or v == '':
+            return None
+        s = str(v).strip().lower()
+        if len(s) != 2:
+            raise ValueError('country_code must be 2-letter ISO alpha-2')
+        return s
 
 
 class ItineraryDraftV1(BaseModel):
@@ -43,6 +58,10 @@ class ItineraryDraftV1(BaseModel):
     origin: Origin
     segments: Optional[List[SegmentItem]] = None
     days: List[Day] = Field(..., min_length=1, max_length=60)
+    trip_geo_scope: Literal['domestic', 'international'] = Field(
+        default='domestic',
+        description='domestic=中国行程用百度检索；international=境外用 Nominatim',
+    )
 
     @model_validator(mode='after')
     def consecutive_day_indices(self) -> ItineraryDraftV1:

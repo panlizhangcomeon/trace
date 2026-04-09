@@ -1,10 +1,9 @@
 """
-Persist ItineraryDraftV1 as Trip / Route / POI / RoutePOI with Baidu geocoding.
+Persist ItineraryDraftV1 as Trip / Route / POI / RoutePOI with Baidu or Nominatim geocoding.
 """
 from __future__ import annotations
 
 import logging
-import time
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Dict, List, Tuple
 
@@ -14,14 +13,14 @@ from django.db import transaction
 from apps.pois.models import POI
 from apps.routes.models import Route, RoutePOI
 from apps.trips.models import Trip
-from services.baidu_poi_service import BaiduPOIService, BaiduAPIError, BaiduSearchTransientError
+from services.baidu_poi_service import BaiduPOIService, BaiduAPIError
 from services.itinerary_schema import ItineraryDraftV1, Day, Stop
+from services.nominatim_service import NominatimService, get_nominatim_service
+from services.smart_trip_geocode import resolve_stop_domestic, resolve_stop_international
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_ROUTE_COLOR = '#8b4513'
-WARNING_POI_SEARCH_EMPTY = 'poi_search_empty'
-WARNING_POI_SEARCH_ERROR = 'poi_search_error'
 
 
 def _round_coord_key(lat: float, lng: float) -> Tuple[str, str]:
@@ -62,17 +61,22 @@ def commit_draft(
     trip_meta: Dict[str, Any],
     *,
     baidu: BaiduPOIService | None = None,
+    nominatim: NominatimService | None = None,
 ) -> Tuple[Trip, List[Dict[str, Any]]]:
     """
     Create Trip, Routes, POIs, RoutePOIs inside a transaction.
     Returns (trip, warnings). Warnings for skipped stops (empty search / transient error).
 
-    Baidu place 检索在事务外按天、按站点严格串行执行；每次实际请求结束后休眠
-    ``settings.BAIDU_SMART_COMMIT_INTERVAL_SEC``，避免触发并发/QPS 限流。
+    Baidu / Nominatim 检索在事务外按天、按站点严格串行；每次实际请求结束后休眠对应 interval，避免超频。
     """
     svc = baidu or BaiduPOIService(ak=settings.BAIDU_MAP_AK)
+    international = draft.trip_geo_scope == 'international'
+    nom: NominatimService | None = nominatim
+    if international and nom is None:
+        nom = get_nominatim_service()
     warnings: List[Dict[str, Any]] = []
-    interval_sec = float(getattr(settings, 'BAIDU_SMART_COMMIT_INTERVAL_SEC', 0.35))
+    interval_baidu = float(getattr(settings, 'BAIDU_SMART_COMMIT_INTERVAL_SEC', 0.35))
+    interval_nominatim = float(getattr(settings, 'NOMINATIM_SMART_COMMIT_INTERVAL_SEC', 1.15))
 
     name = trip_meta.get('name') or draft.trip_summary.title_hint
     destination = trip_meta.get('destination') or draft.trip_summary.destination_summary
@@ -82,7 +86,15 @@ def commit_draft(
     for day in draft.days:
         formatted_by_stop: List[Dict[str, Any] | None] = []
         for stop in day.stops:
-            formatted_by_stop.append(_resolve_stop_for_commit(day, stop, svc, warnings, interval_sec))
+            if international:
+                assert nom is not None
+                formatted_by_stop.append(
+                    resolve_stop_international(day, stop, nom, warnings, interval_nominatim)
+                )
+            else:
+                formatted_by_stop.append(
+                    resolve_stop_domestic(day, stop, svc, warnings, interval_baidu)
+                )
         resolved_days.append((day, formatted_by_stop))
 
     with transaction.atomic():
@@ -96,72 +108,6 @@ def commit_draft(
             _commit_day_resolved(trip, day, formatted_by_stop)
 
     return trip, warnings
-
-
-def _resolve_stop_for_commit(
-    day: Day,
-    stop: Stop,
-    svc: BaiduPOIService,
-    warnings: List[Dict[str, Any]],
-    interval_sec: float,
-) -> Dict[str, Any] | None:
-    """Call Baidu for one stop; sleep after each real request (non-empty query) when interval_sec > 0."""
-    query = (stop.search_query or stop.display_name or '').strip()
-    region = day.city_context or '全国'
-    transient_failed = False
-    raw_results: List[Dict[str, Any]] | None = None
-    try:
-        raw_results = svc.search_strict(query=query, region=region, limit=10)
-    except BaiduAPIError:
-        logger.warning(
-            'Baidu global API error during smart trip commit',
-            extra={'day_index': day.day_index, 'query_len': len(query)},
-        )
-        raise
-    except BaiduSearchTransientError as e:
-        logger.info(
-            'Baidu transient error, skipping stop',
-            extra={'day_index': day.day_index, 'display_name': stop.display_name, 'err': str(e)},
-        )
-        warnings.append(
-            {
-                'day_index': day.day_index,
-                'stop_display_name': stop.display_name,
-                'code': WARNING_POI_SEARCH_ERROR,
-            }
-        )
-        transient_failed = True
-    finally:
-        if query and interval_sec > 0:
-            time.sleep(interval_sec)
-
-    if transient_failed:
-        return None
-
-    if not raw_results:
-        warnings.append(
-            {
-                'day_index': day.day_index,
-                'stop_display_name': stop.display_name,
-                'code': WARNING_POI_SEARCH_EMPTY,
-            }
-        )
-        return None
-
-    formatted = svc.format_poi_result(raw_results[0])
-    lat = formatted.get('latitude')
-    lng = formatted.get('longitude')
-    if lat is None or lng is None:
-        warnings.append(
-            {
-                'day_index': day.day_index,
-                'stop_display_name': stop.display_name,
-                'code': WARNING_POI_SEARCH_EMPTY,
-            }
-        )
-        return None
-
-    return formatted
 
 
 def _commit_day_resolved(
