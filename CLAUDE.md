@@ -25,5 +25,3 @@ Python 3.11+, JavaScript (ES2022+): Follow standard conventions
 
 - 001-travel-route-planner: Added Python 3.11+, JavaScript (ES2022+)
 
-
-
